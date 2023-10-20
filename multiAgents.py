@@ -189,15 +189,89 @@ class MinimaxAgent(MultiAgentSearchAgent):
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
-    Your minimax agent with alpha-beta pruning (question 3)
+    This agent uses the Minimax algorithm with alpha-beta pruning to make decisions.
+    Alpha-beta pruning is a technique to avoid searching through branches of the game 
+    tree that won't be selected.
     """
 
     def getAction(self, gameState):
         """
-        Returns the minimax action using self.depth and self.evaluationFunction
+        Given a gameState, this method returns the best action to take based on 
+        the evaluation function, tree depth, and alpha-beta pruning. 
+        
+        :param gameState: The current game state.
+        :return: The best action to take from the current state.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        value, action = self.MaxValue(gameState, 0, None, -float('inf'), float('inf'))
+        return action
+
+    def MaxValue(self, gameState, depth, prevAction, alpha, beta):
+        """
+        Calculate the maximum value for Pacman (agent 0) given a game state.
+        
+        :param gameState: The current game state.
+        :param depth: The current depth in the search tree.
+        :param prevAction: The action that led to the current state.
+        :param alpha: The best score so far for Pacman at the current depth or above.
+        :param beta: The best score so far for the ghost at the current depth or above.
+        :return: The maximum value and the action leading to it.
+        """
+        
+        # If terminal state or max depth is reached, return evaluated score.
+        if gameState.isWin() or gameState.isLose() or self.depth == depth:
+            return self.evaluationFunction(gameState), prevAction
+
+        v = -float('inf')
+        tempAction = None
+        
+        for action in gameState.getLegalActions(0):
+            tempValue, temp = self.MinValue(gameState.generateSuccessor(0, action), depth, action, 1, alpha, beta)
+            if tempValue > v:
+                v = tempValue
+                tempAction = action
+            # Prune the branch if current value is greater than beta
+            if v > beta:
+                return v, tempAction
+            alpha = max(alpha, v)  # Update alpha for next iterations
+
+        return v, tempAction
+    
+    def MinValue(self, gameState, depth, prevAction, i, alpha, beta):
+        """
+        Calculate the minimum value for a ghost agent given a game state.
+        
+        :param gameState: The current game state.
+        :param depth: The current depth in the search tree.
+        :param prevAction: The action that led to the current state.
+        :param i: The index of the current ghost agent.
+        :param alpha: The best score so far for Pacman at the current depth or above.
+        :param beta: The best score so far for the ghost at the current depth or above.
+        :return: The minimum value and the action leading to it.
+        """
+        
+        # If terminal state or max depth is reached, return evaluated score.
+        if gameState.isWin() or gameState.isLose() or self.depth < depth:
+            return self.evaluationFunction(gameState), prevAction
+
+        v = float('inf')
+        tempAction = None
+        
+        for action in gameState.getLegalActions(i):
+            if i == gameState.getNumAgents() - 1:  # If it's the last ghost, go to MaxValue next
+                tempValue, temp = self.MaxValue(gameState.generateSuccessor(i, action), depth + 1, action, alpha, beta)
+            else:  # Otherwise, continue with the next ghost agent
+                tempValue, temp = self.MinValue(gameState.generateSuccessor(i, action), depth, action, i + 1, alpha, beta)
+
+            if tempValue < v:
+                v = tempValue
+                tempAction = action
+
+            # Prune the branch if current value is less than alpha
+            if v < alpha:
+                return v, tempAction
+            beta = min(beta, v)  # Update beta for next iterations
+
+        return v, tempAction
 
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
